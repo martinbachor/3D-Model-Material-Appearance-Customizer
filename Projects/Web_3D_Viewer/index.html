@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web 3D Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100%;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0e27;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        /* Canvas container */
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Back button - top left */
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            padding: 12px 24px;
+            background: rgba(100, 150, 255, 0.2);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 50px;
+            border: 1px solid rgba(100, 150, 255, 0.4);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-button:hover {
+            background: rgba(100, 150, 255, 0.4);
+            border-color: rgba(100, 150, 255, 0.8);
+        }
+
+        /* Control buttons group (top left) */
+        .button-group {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 10px 16px;
+            background: rgba(100, 150, 255, 0.2);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 50px;
+            border: 1px solid rgba(100, 150, 255, 0.4);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .control-btn:hover {
+            background: rgba(100, 150, 255, 0.4);
+            border-color: rgba(100, 150, 255, 0.8);
+        }
+
+        /* Top panel with controls */
+        .control-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(15, 23, 50, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(100, 150, 255, 0.3);
+            backdrop-filter: blur(10px);
+            max-width: 300px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-panel h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.1rem;
+            color: #6496ff;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            color: #bbb;
+        }
+
+        .control-group input[type="file"],
+        .control-group select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(100, 150, 255, 0.3);
+            color: #fff;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(100, 150, 255, 0.3);
+            border-radius: 6px;
+        }
+
+        .file-upload-btn {
+            background: #6496ff;
+            border: none;
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-btn:hover {
+            background: #7aa5ff;
+        }
+
+        .file-upload-name {
+            color: #ddd;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .control-group input[type="file"]::file-selector-button {
+            background: #6496ff;
+            border: none;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .control-group input[type="file"]::file-selector-button:hover {
+            background: #7aa5ff;
+        }
+
+        .control-group select:hover,
+        .control-group select:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #6496ff;
+            outline: none;
+        }
+
+        /* Keep native dropdown options readable across browsers/OS themes */
+        .control-group select option {
+            color: #111;
+            background: #fff;
+        }
+
+        .control-group input[type="color"] {
+            width: 100%;
+            height: 44px;
+            padding: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(100, 150, 255, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .control-group input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .control-group input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 4px;
+        }
+
+        .control-group input[type="color"]::-moz-color-swatch {
+            border: none;
+            border-radius: 4px;
+        }
+
+        .toggle-btn,
+        .preset-btn {
+            width: 100%;
+            justify-content: center;
+            border: 1px solid rgba(100, 150, 255, 0.4);
+            border-radius: 8px;
+            background: rgba(100, 150, 255, 0.18);
+            color: #fff;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn:hover,
+        .preset-btn:hover {
+            background: rgba(100, 150, 255, 0.35);
+            border-color: rgba(100, 150, 255, 0.8);
+        }
+
+        .toggle-btn.active {
+            background: rgba(74, 217, 145, 0.22);
+            border-color: rgba(74, 217, 145, 0.7);
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .preset-btn.is-active {
+            background: rgba(100, 150, 255, 0.35);
+            border-color: rgba(100, 150, 255, 0.9);
+        }
+
+        .reset-customizer-btn {
+            width: 100%;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .reset-customizer-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.28);
+        }
+
+        .customization-note {
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: #8d99b5;
+            line-height: 1.35;
+        }
+
+        /* Loading indicator */
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            z-index: 100;
+            font-size: 1rem;
+            color: #6496ff;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(100, 150, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #6496ff;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Instructions at center (when no model loaded) */
+        .instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 50;
+            background: rgba(15, 23, 50, 0.9);
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid rgba(100, 150, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .instructions h2 {
+            font-size: 2rem;
+            color: #6496ff;
+            margin: 0;
+        }
+
+        .instructions p {
+            color: #bbb;
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .instructions.hidden {
+            display: none;
+        }
+
+        /* Info text at bottom */
+        .info-text {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 100;
+            font-size: 0.9rem;
+            color: #888;
+            max-width: 300px;
+            line-height: 1.4;
+        }
+
+        .model-info {
+            color: #6496ff;
+            font-weight: 600;
+        }
+
+        .credit-box {
+            margin-top: 8px;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            color: #9db2e8;
+        }
+
+        .credit-box a {
+            color: #8fc2ff;
+        }
+
+        /* Responsive for mobile */
+        @media (max-width: 768px) {
+            .control-panel {
+                right: 10px;
+                top: 70px;
+                max-width: calc(100% - 20px);
+                padding: 15px;
+            }
+
+            .instructions {
+                padding: 30px;
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Control Buttons Group -->
+    <div class="button-group">
+        <a href="/" id="back-to-portal" class="control-btn">
+            <span>←</span> Back to Portal
+        </a>
+        <button id="reset-view-btn" class="control-btn" title="Reset camera to default view">
+            <span>⟲</span> Reset View
+        </button>
+        <button id="theme-toggle-btn" class="control-btn" title="Toggle dark/light mode">
+            <span>☀️</span> Light Mode
+        </button>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="control-panel">
+        <h3>🎮 Controls</h3>
+        
+        <div class="control-group">
+            <label for="model-file">📁 Load .glb/.gltf Model</label>
+            <input type="file" id="model-file" accept=".glb,.gltf,.GLB,.GLTF" style="display: none;">
+            <div class="file-upload-row">
+                <button type="button" id="choose-file-btn" class="file-upload-btn">Choose File</button>
+                <span id="selected-file-name" class="file-upload-name">No file selected</span>
+            </div>
+        </div>
+
+        <div class="control-group" id="preset-models-group" style="display: none;">
+            <label for="preset-select">📦 Preset Models</label>
+            <select id="preset-select">
+                <option value="">-- Choose a preset model --</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="color-picker">🎨 Visor / Emissive Color</label>
+            <input type="color" id="color-picker" value="#6496ff">
+        </div>
+
+        <div class="control-group">
+            <label>✨ Emissive Glow</label>
+            <button type="button" id="emissive-toggle-btn" class="toggle-btn">Glow: OFF</button>
+        </div>
+
+        <div class="control-group">
+            <label for="material-style-select">🧱 Material Style</label>
+            <select id="material-style-select">
+                <option value="default">Default</option>
+                <option value="matte">Matte</option>
+                <option value="metal">Metal</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>🎯 Color Presets</label>
+            <div class="preset-grid">
+                <button type="button" class="preset-btn" data-color="#4aa3ff" data-emissive="#4aa3ff">Blue theme</button>
+                <button type="button" class="preset-btn" data-color="#ff5d5d" data-emissive="#ff5d5d">Red theme</button>
+                <button type="button" class="preset-btn" data-color="#45d483" data-emissive="#45d483">Green theme</button>
+            </div>
+            <div class="customization-note">
+                These controls only update the loaded model materials. The model is not reloaded.
+            </div>
+        </div>
+
+        <div class="control-group">
+            <button type="button" id="reset-customizer-btn" class="reset-customizer-btn">Reset Customizer</button>
+        </div>
+
+        <div class="control-group">
+            <p style="font-size: 0.85rem; color: #999; margin: 0;">
+                💡 <strong>Tips:</strong><br>
+                • Scroll to zoom<br>
+                • Left-click + drag to rotate<br>
+                • Right-click + drag to pan
+            </p>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div class="loading-spinner" id="loading-spinner">
+        <span class="spinner"></span> Loading model...
+    </div>
+
+    <!-- Instructions (shown when no model loaded) -->
+    <div class="instructions" id="instructions">
+        <h2>📦 3D Model Viewer</h2>
+        <p>Upload a .glb or .gltf 3D model to get started</p>
+    </div>
+
+    <!-- Info Text -->
+    <div class="info-text">
+        <div class="model-info" id="model-name"></div>
+        <div class="credit-box" id="model-credit"></div>
+        <div style="color: #666; font-size: 0.85rem; margin-top: 5px;">
+            Web-based 3D viewer powered by Three.js
+        </div>
+    </div>
+
+    <!-- Canvas container for Three.js -->
+    <div id="canvas-container"></div>
+
+    <!-- Three.js Libraries from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // ============================================================
+        // THREE.JS SCENE SETUP
+        // ============================================================
+
+        // Get container
+        const container = document.getElementById('canvas-container');
+
+        // Initialize Scene
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0e27);
+
+        // Initialize Camera
+        const camera = new THREE.PerspectiveCamera(
+            75,                                    // FOV
+            window.innerWidth / window.innerHeight, // Aspect ratio
+            0.1,                                   // Near clipping plane
+            1000                                   // Far clipping plane
+        );
+        camera.position.z = 5;
+
+        // Initialize Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMappingExposure = 1;
+        container.appendChild(renderer.domElement);
+
+        // ============================================================
+        // LIGHTING SETUP
+        // ============================================================
+
+        // Ambient light (general illumination)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        // Directional light (like sunlight)
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7.5);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        // Optional: Point light for extra dimension
+        const pointLight = new THREE.PointLight(0xffffff, 0.3);
+        pointLight.position.set(-5, 5, 5);
+        scene.add(pointLight);
+
+        // ============================================================
+        // ORBIT CONTROLS SETUP
+        // ============================================================
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;      // Smooth rotation
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = false;
+        controls.autoRotateSpeed = 2;
+
+        // ============================================================
+        // LOADERS & VARIABLES
+        // ============================================================
+
+        const gltfLoader = new THREE.GLTFLoader();
+        const clock = new THREE.Clock();
+        let currentModel = null;
+        let animationMixer = null;
+
+        // UI Elements
+        const modelFile = document.getElementById('model-file');
+        const presetSelect = document.getElementById('preset-select');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const instructions = document.getElementById('instructions');
+        const modelName = document.getElementById('model-name');
+        const modelCredit = document.getElementById('model-credit');
+        const resetViewBtn = document.getElementById('reset-view-btn');
+        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+        const backToPortalLink = document.getElementById('back-to-portal');
+        const chooseFileBtn = document.getElementById('choose-file-btn');
+        const selectedFileName = document.getElementById('selected-file-name');
+        const colorPicker = document.getElementById('color-picker');
+        const emissiveToggleBtn = document.getElementById('emissive-toggle-btn');
+        const materialStyleSelect = document.getElementById('material-style-select');
+        const resetCustomizerBtn = document.getElementById('reset-customizer-btn');
+        const presetButtons = document.querySelectorAll('.preset-btn');
+        let selectedPreset = null;
+
+        // Theme state
+        let isDarkMode = true;
+        const initialCameraPos = { x: 0, y: 0, z: 5 };
+        const materialStylePresets = {
+            matte: { roughness: 0.95, metalness: 0.0 },
+            metal: { roughness: 0.25, metalness: 0.9 }
+        };
+        let currentBaseColor = colorPicker.value;
+        let currentEmissiveColor = colorPicker.value;
+        let emissiveGlowEnabled = false;
+        let currentMaterialStyle = materialStyleSelect.value;
+        let customizationTouched = false;
+        let colorCustomizationActive = false;
+
+        /**
+         * Resolve portal URL for Flask route and static hosting.
+         */
+        function getPortalUrl() {
+            const path = window.location.pathname;
+            const marker = '/Projects/';
+            const markerIndex = path.indexOf(marker);
+
+            if (markerIndex !== -1) {
+                const basePath = path.slice(0, markerIndex);
+                return basePath ? `${basePath}/` : '/';
+            }
+
+            return '../../index.html';
+        }
+
+        backToPortalLink.href = getPortalUrl();
+
+        // ============================================================
+        // FUNCTIONS
+        // ============================================================
+
+        /**
+         * Reset camera and controls to default view
+         */
+        function resetView() {
+            if (currentModel) {
+                camera.position.set(initialCameraPos.x, initialCameraPos.y, initialCameraPos.z);
+                controls.target.set(0, 0, 0);
+                controls.update();
+            }
+        }
+
+        /**
+         * Toggle between dark and light mode
+         */
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            
+            if (isDarkMode) {
+                // Dark mode
+                document.body.style.background = '#0a0e27';
+                scene.background = new THREE.Color(0x0a0e27);
+                themeToggleBtn.textContent = '☀️ Light Mode';
+                themeToggleBtn.style.color = '#fff';
+            } else {
+                // Light mode
+                document.body.style.background = '#f5f5f5';
+                scene.background = new THREE.Color(0xf5f5f5);
+                themeToggleBtn.textContent = '🌙 Dark Mode';
+                themeToggleBtn.style.color = '#333';
+            }
+        }
+
+        /**
+         * Show/hide loading spinner
+         */
+        function setLoading(isLoading) {
+            loadingSpinner.style.display = isLoading ? 'block' : 'none';
+        }
+
+        /**
+         * Update all supported mesh materials on the active model.
+         */
+        function applyMaterialCustomization() {
+            if (!currentModel) {
+                return;
+            }
+
+            const style = materialStylePresets[currentMaterialStyle] || materialStylePresets.default;
+
+            currentModel.traverse((child) => {
+                if (!child.isMesh || !child.material) {
+                    return;
+                }
+
+                const materials = Array.isArray(child.material) ? child.material : [child.material];
+
+                materials.forEach((material) => {
+                    if (colorCustomizationActive && material.color) {
+                        material.color.set(currentBaseColor);
+                    }
+
+                    if (material.emissive) {
+                        if (emissiveGlowEnabled) {
+                            material.emissive.copy(getGlowColorForMaterial(material));
+                        } else if (material.userData.originalEmissive) {
+                            material.emissive.copy(material.userData.originalEmissive);
+                        }
+                    }
+
+                    if ('emissiveIntensity' in material) {
+                        material.emissiveIntensity = emissiveGlowEnabled
+                            ? (material.userData.originalEmissiveIntensity ?? 1.0)
+                            : 0;
+                    }
+
+                    if (currentMaterialStyle !== 'default') {
+                        if ('roughness' in material) {
+                            material.roughness = style.roughness;
+                        }
+
+                        if ('metalness' in material) {
+                            material.metalness = style.metalness;
+                        }
+                    } else {
+                        if ('roughness' in material && material.userData.originalRoughness !== undefined) {
+                            material.roughness = material.userData.originalRoughness;
+                        }
+
+                        if ('metalness' in material && material.userData.originalMetalness !== undefined) {
+                            material.metalness = material.userData.originalMetalness;
+                        }
+                    }
+
+                    material.needsUpdate = true;
+                });
+            });
+        }
+
+        /**
+         * Mark a preset button as selected.
+         */
+        function setActivePresetButton(activeButton) {
+            presetButtons.forEach((button) => {
+                button.classList.toggle('is-active', button === activeButton);
+            });
+        }
+
+        /**
+         * Get the emissive color used for glow.
+         */
+        function getGlowColorForMaterial(material) {
+            if (colorCustomizationActive) {
+                return new THREE.Color(currentEmissiveColor);
+            }
+
+            if (material.userData.originalEmissive && !material.userData.originalEmissive.equals(new THREE.Color(0x000000))) {
+                return material.userData.originalEmissive;
+            }
+
+            return new THREE.Color(currentBaseColor);
+        }
+
+        /**
+         * Update the current tint color and apply it to the model.
+         */
+        function setTintColor(baseColor, emissiveColor = baseColor, activeButton = null) {
+            customizationTouched = true;
+            colorCustomizationActive = true;
+            currentBaseColor = baseColor;
+            currentEmissiveColor = emissiveColor;
+            colorPicker.value = baseColor;
+            setActivePresetButton(activeButton);
+            applyMaterialCustomization();
+        }
+
+        /**
+         * Toggle emissive glow on supported materials.
+         */
+        function toggleEmissiveGlow() {
+            customizationTouched = true;
+            emissiveGlowEnabled = !emissiveGlowEnabled;
+            emissiveToggleBtn.textContent = emissiveGlowEnabled ? 'Glow: ON' : 'Glow: OFF';
+            emissiveToggleBtn.classList.toggle('active', emissiveGlowEnabled);
+            applyMaterialCustomization();
+        }
+
+        /**
+         * Update material roughness and metalness.
+         */
+        function updateMaterialStyle(styleName) {
+            customizationTouched = true;
+            currentMaterialStyle = styleName;
+            applyMaterialCustomization();
+        }
+
+        /**
+         * Restore the customizer controls to their default values.
+         */
+        function resetCustomizer() {
+            customizationTouched = false;
+            colorCustomizationActive = false;
+            currentBaseColor = '#6496ff';
+            currentEmissiveColor = '#6496ff';
+            emissiveGlowEnabled = false;
+            currentMaterialStyle = 'default';
+
+            colorPicker.value = '#6496ff';
+            materialStyleSelect.value = 'default';
+            emissiveToggleBtn.textContent = 'Glow: OFF';
+            emissiveToggleBtn.classList.remove('active');
+            setActivePresetButton(null);
+
+            if (currentModel) {
+                currentModel.traverse((child) => {
+                    if (!child.isMesh || !child.material) {
+                        return;
+                    }
+
+                    const materials = Array.isArray(child.material) ? child.material : [child.material];
+
+                    materials.forEach((material) => {
+                        if (material.color) {
+                            material.color.copy(material.userData.originalColor || material.color);
+                        }
+
+                        if (material.emissive && material.userData.originalEmissive) {
+                            material.emissive.copy(material.userData.originalEmissive);
+                        }
+
+                        if ('roughness' in material && material.userData.originalRoughness !== undefined) {
+                            material.roughness = material.userData.originalRoughness;
+                        }
+
+                        if ('metalness' in material && material.userData.originalMetalness !== undefined) {
+                            material.metalness = material.userData.originalMetalness;
+                        }
+
+                        if ('emissiveIntensity' in material && material.userData.originalEmissiveIntensity !== undefined) {
+                            material.emissiveIntensity = material.userData.originalEmissiveIntensity;
+                        }
+
+                        material.needsUpdate = true;
+                    });
+                });
+            }
+        }
+
+        /**
+         * Apply a named color preset.
+         */
+        function applyColorPreset(event) {
+            const button = event.currentTarget;
+            const presetColor = button.dataset.color;
+            const presetEmissive = button.dataset.emissive || presetColor;
+
+            if (!presetColor) {
+                return;
+            }
+
+            setTintColor(presetColor, presetEmissive, button);
+        }
+
+        /**
+         * Clear the current model from the scene
+         */
+        function clearModel() {
+            if (currentModel) {
+                scene.remove(currentModel);
+                currentModel = null;
+            }
+
+            animationMixer = null;
+        }
+
+        /**
+         * Load a 3D model from a File or URL
+         */
+        function loadModel(fileOrUrl) {
+            setLoading(true);
+            clearModel();
+
+            // Create a function reader based on file type
+            if (fileOrUrl instanceof File) {
+                // It's a File object (from file input)
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const arrayBuffer = event.target.result;
+                    gltfLoader.parse(arrayBuffer, '', (gltf) => {
+                        addModelToScene(gltf, fileOrUrl.name);
+                        setLoading(false);
+                    }, (error) => {
+                        console.error('Error parsing model:', error);
+                        alert('Error loading model. Make sure it\'s a valid .glb or .gltf file.');
+                        setLoading(false);
+                    });
+                };
+                reader.readAsArrayBuffer(fileOrUrl);
+            } else {
+                // It's a URL (for preset models)
+                gltfLoader.load(
+                    fileOrUrl,
+                    (gltf) => {
+                        addModelToScene(gltf, fileOrUrl.split('/').pop());
+                        setLoading(false);
+                    },
+                    undefined,
+                    (error) => {
+                        console.error('Error loading model from URL:', error);
+                        alert('Error loading model from URL.');
+                        setLoading(false);
+                    }
+                );
+            }
+        }
+
+        /**
+         * Add loaded model to scene and auto-fit camera
+         */
+        function addModelToScene(gltf, name) {
+            currentModel = gltf.scene;
+
+            currentModel.traverse((child) => {
+                if (!child.isMesh || !child.material) {
+                    return;
+                }
+
+                const materials = Array.isArray(child.material) ? child.material : [child.material];
+
+                materials.forEach((material) => {
+                    if (material.color && !material.userData.originalColor) {
+                        material.userData.originalColor = material.color.clone();
+                    }
+
+                    if (material.emissive && !material.userData.originalEmissive) {
+                        material.userData.originalEmissive = material.emissive.clone();
+                    }
+
+                    if ('roughness' in material && material.userData.originalRoughness === undefined) {
+                        material.userData.originalRoughness = material.roughness;
+                    }
+
+                    if ('metalness' in material && material.userData.originalMetalness === undefined) {
+                        material.userData.originalMetalness = material.metalness;
+                    }
+
+                    if ('emissiveIntensity' in material && material.userData.originalEmissiveIntensity === undefined) {
+                        material.userData.originalEmissiveIntensity = material.emissiveIntensity;
+                    }
+                });
+            });
+
+            // Calculate bounding box
+            const box = new THREE.Box3().setFromObject(currentModel);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+
+            // Scale factor to fit model nicely in view
+            const scale = 3 / maxDim;
+
+            // Center and scale the model
+            currentModel.position.x = -center.x * scale;
+            currentModel.position.y = -center.y * scale;
+            currentModel.position.z = -center.z * scale;
+            currentModel.scale.setScalar(scale);
+
+            // Add to scene
+            scene.add(currentModel);
+
+            // Keep the original GLTF appearance until the user changes a customization control.
+            if (customizationTouched) {
+                applyMaterialCustomization();
+            }
+
+            // Reset camera and controls
+            camera.position.set(0, 0, 5);
+            controls.target.set(0, 0, 0);
+            controls.update();
+
+            // Hide instructions
+            instructions.classList.add('hidden');
+
+            // Show model name
+            modelName.textContent = `Model: ${name}`;
+
+            // Play all clips if the model contains animations
+            if (gltf.animations && gltf.animations.length > 0) {
+                animationMixer = new THREE.AnimationMixer(currentModel);
+                gltf.animations.forEach((clip) => {
+                    animationMixer.clipAction(clip).play();
+                });
+            }
+
+            // Show attribution only for preset models
+            if (selectedPreset) {
+                const sourceLine = selectedPreset.sourceUrl
+                    ? `Source: <a href="${selectedPreset.sourceUrl}" target="_blank" rel="noopener noreferrer">${selectedPreset.author}</a>`
+                    : `Source: ${selectedPreset.author}`;
+                const noteLine = selectedPreset.note ? `<br>${selectedPreset.note}` : '';
+                modelCredit.innerHTML = `${sourceLine}<br>License: ${selectedPreset.license}${noteLine}`;
+            }
+
+            // Always start each newly loaded model in the default customizer state.
+            resetCustomizer();
+        }
+
+        /**
+         * Handle file input change
+         */
+        modelFile.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            selectedFileName.textContent = file ? file.name : 'No file selected';
+            selectedPreset = null;
+            modelCredit.textContent = '';
+
+            if (file && (file.name.endsWith('.glb') || file.name.endsWith('.gltf'))) {
+                loadModel(file);
+            } else {
+                alert('Please select a valid .glb or .gltf file.');
+            }
+        });
+
+        chooseFileBtn.addEventListener('click', () => {
+            modelFile.click();
+        });
+
+        colorPicker.addEventListener('input', (event) => {
+            setTintColor(event.target.value);
+        });
+
+        emissiveToggleBtn.addEventListener('click', toggleEmissiveGlow);
+
+        materialStyleSelect.addEventListener('change', (event) => {
+            updateMaterialStyle(event.target.value);
+        });
+
+        presetButtons.forEach((button) => {
+            button.addEventListener('click', applyColorPreset);
+        });
+
+        resetCustomizerBtn.addEventListener('click', resetCustomizer);
+
+        /**
+         * Handle preset model selection (if presets are added)
+         */
+        presetSelect.addEventListener('change', (event) => {
+            const url = event.target.value;
+            if (url) {
+                selectedPreset = presetModels.find(model => model.url === url) || null;
+                selectedFileName.textContent = 'No file selected';
+                loadModel(url);
+            } else {
+                selectedPreset = null;
+                modelCredit.textContent = '';
+            }
+        });
+
+        /**
+         * Handle reset view button
+         */
+        resetViewBtn.addEventListener('click', resetView);
+
+        /**
+         * Handle theme toggle button
+         */
+        themeToggleBtn.addEventListener('click', toggleTheme);
+
+        // ============================================================
+        // RESPONSIVE WINDOW HANDLING
+        // ============================================================
+
+        /**
+         * Handle window resize
+         */
+        window.addEventListener('resize', () => {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(width, height);
+        });
+
+        // ============================================================
+        // ANIMATION LOOP
+        // ============================================================
+
+        /**
+         * Main render loop
+         */
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+
+            if (animationMixer) {
+                animationMixer.update(delta);
+            }
+
+            // Update controls (for damping)
+            controls.update();
+
+            // Render the scene
+            renderer.render(scene, camera);
+        }
+
+        // Start the animation loop
+        animate();
+
+        // ============================================================
+        // PRESET MODELS (Optional)
+        // ============================================================
+        // To add preset models, provide valid URLs to .glb files
+        // Free model resources:
+        // - Poly Haven: https://polyhaven.com
+        // - Sketchfab: https://sketchfab.com (filter by GLB)
+        // - Three.js examples: https://threejs.org/examples/
+        // 
+        // Example: Add your own models here like this:
+        // const presetModels = [
+        //     { name: 'My Model 1', url: 'https://example.com/model1.glb' },
+        //     { name: 'My Model 2', url: 'https://example.com/model2.glb' },
+        // ];
+        
+        const presetModels = [
+            {
+                name: 'Battle Damaged Sci-fi Helmet',
+                url: './DamagedHelmet.glb',
+                author: 'theblueturtle_',
+                license: 'Creative Commons Attribution-NonCommercial (CC BY-NC)',
+                sourceUrl: 'https://sketchfab.com/models/b81008d513954189a063ff901f7abfe4'
+            },
+            {
+                name: 'Box (glTF Test Model)',
+                url: './Box.glb',
+                author: 'Cesium',
+                license: 'Creative Commons Attribution 4.0 International (CC BY 4.0)',
+                note: 'Donated by Cesium for glTF testing.'
+            },
+            {
+                name: 'Box Animated (glTF Test Model)',
+                url: './BoxAnimated.glb',
+                author: 'Cesium',
+                license: 'Creative Commons Attribution 4.0 International (CC BY 4.0)',
+                note: 'Donated by Cesium for glTF testing.'
+            }
+        ];
+
+        if (presetModels.length > 0) {
+            document.getElementById('preset-models-group').style.display = 'block';
+            presetModels.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.url;
+                option.textContent = model.name;
+                presetSelect.appendChild(option);
+            });
+        }
+    </script>
+</body>
+</html>
